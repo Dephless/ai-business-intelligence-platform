@@ -8,7 +8,14 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4.1-mini"
     enable_llm: bool = False
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    secret_key: str | None = None
+    access_token_expire_minutes: int = 30
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 settings = Settings()
