@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
-from sqlalchemy import DateTime, Integer, JSON, String
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db.session import Base
 
 
@@ -12,5 +14,5 @@ class Analysis(Base):
     record_count: Mapped[int] = mapped_column(Integer, nullable=False)
     result: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
