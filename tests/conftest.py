@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.db.session import Base, get_db
 from app.main import app
 
@@ -41,3 +42,12 @@ def client():
         app.dependency_overrides.update(original_overrides)
         Base.metadata.drop_all(bind=engine)
         engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def test_secret_key(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "secret_key",
+        "test-secret-key-for-unit-tests-32-bytes",
+    )
