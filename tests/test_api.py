@@ -159,9 +159,11 @@ def test_users_cannot_access_each_others_analyses(client):
     assert login_response.status_code == 200
 
     user_b_token = login_response.json()["access_token"]
-    client.headers.update({
-        "Authorization": f"Bearer {user_b_token}",
-    })
+    client.headers.update(
+        {
+            "Authorization": f"Bearer {user_b_token}",
+        }
+    )
 
     # Benutzer B darf die Analyse von A nicht sehen
     response = client.get(
@@ -182,9 +184,11 @@ def test_users_cannot_access_each_others_analyses(client):
     assert login_response.status_code == 200
 
     user_a_token = login_response.json()["access_token"]
-    client.headers.update({
-        "Authorization": f"Bearer {user_a_token}",
-    })
+    client.headers.update(
+        {
+            "Authorization": f"Bearer {user_a_token}",
+        }
+    )
 
     # Benutzer A darf seine Analyse weiterhin sehen
     response = client.get(
