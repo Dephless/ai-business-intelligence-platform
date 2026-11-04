@@ -1,106 +1,206 @@
 # AI Business Intelligence Platform
 
-An API-first MVP that analyzes structured business data, calculates numeric metrics, and generates actionable recommendations. The application supports deterministic baseline analysis and optional OpenAI-powered interpretation.
+An API-first business intelligence platform that analyzes structured business data, calculates statistical metrics, detects potential anomalies, and generates actionable recommendations.
+
+The platform combines deterministic analysis with optional OpenAI-powered interpretation. It is built with a modular architecture and designed to evolve into a production-oriented BI application.
 
 ## Features
 
-- FastAPI REST API with interactive OpenAPI documentation
-- Pydantic request/response validation
-- Numeric summaries (count, total, average, min, max)
-- Baseline anomaly signals and recommendations
-- Optional OpenAI enhancement (disabled by default)
-- SQLAlchemy persistence with PostgreSQL or local SQLite
-- Docker Compose and GitHub Actions CI
-- Automated API tests
+- **REST API:** FastAPI endpoints with interactive OpenAPI documentation.
+- **Data validation:** Pydantic request and response schemas.
+- **Statistical analysis:** Numeric count, total, average, minimum, and maximum.
+- **Anomaly detection:** Baseline signals for unusual and negative values.
+- **AI-powered recommendations:** Optional OpenAI integration with deterministic fallback.
+- **Data persistence:** SQLAlchemy ORM with PostgreSQL and SQLite support.
+- **Database migrations:** Alembic-based schema versioning.
+- **Containerization:** Docker and Docker Compose.
+- **Automated testing:** pytest with coverage reporting.
+- **Code quality:** Ruff linting and formatting, MyPy static type checking.
+- **Continuous integration:** GitHub Actions workflow.
 
-## Quick start (local)
+## Architecture
 
-Requirements: Python 3.12+
+The application follows a modular service-oriented structure:
+
+```text
+Client
+  |
+  v
+FastAPI REST API
+  |
+  v
+Pydantic Validation
+  |
+  v
+Analysis Service
+  |
+  +----> Statistical Analysis
+  |
+  +----> Baseline Recommendations
+  |
+  +----> Optional OpenAI Enhancement
+  |
+  v
+SQLAlchemy ORM
+  |
+  v
+PostgreSQL / SQLite
+```
+
+Database schema changes are managed through Alembic migrations rather than application startup table creation.
+
+## Tech Stack
+
+| Category | Technology |
+|---|---|
+| Language | Python 3.12+ |
+| API | FastAPI |
+| Validation | Pydantic |
+| AI integration | OpenAI API |
+| ORM | SQLAlchemy |
+| Database | PostgreSQL, SQLite |
+| Migrations | Alembic |
+| Testing | pytest, pytest-cov |
+| Code quality | Ruff, MyPy |
+| Containerization | Docker, Docker Compose |
+| CI | GitHub Actions |
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.12 or newer
+- Git
+- Docker Desktop (for the PostgreSQL setup)
+
+### Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Dephless/ai-business-intelligence-platform.git
 cd ai-business-intelligence-platform
+```
+
+### Option 1: Run locally with SQLite
+
+Create and activate a virtual environment.
+
+**Windows PowerShell:**
+
+```powershell
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+.venv\Scripts\Activate.ps1
+```
+
+**macOS / Linux:**
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+Create your local environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+For a local SQLite setup, set the following value in `.env`:
+
+```env
+DATABASE_URL=sqlite:///./business_intelligence.db
+```
+
+Apply database migrations:
+
+```bash
+alembic upgrade head
+```
+
+Start the API:
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-The local default uses SQLite. Open http://localhost:8000/docs for Swagger UI.
+The API is available at:
 
-## Run with Docker and PostgreSQL
+- API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- Health check: http://localhost:8000/health
+
+### Option 2: Run with Docker and PostgreSQL
+
+Create the environment file if it does not exist:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Build and start the services:
 
 ```bash
-cp .env.example .env
-docker compose up --build
+docker compose up --build -d
 ```
 
-The API is available at http://localhost:8000 and Swagger UI at http://localhost:8000/docs.
+The Docker Compose setup starts:
 
-## Enable OpenAI enhancement
+- FastAPI application
+- PostgreSQL 16 database
 
-Set `OPENAI_API_KEY` and `ENABLE_LLM=true` in `.env`. The deterministic baseline remains the fallback when LLM enhancement is disabled. Never commit `.env` or API keys.
+The API container automatically applies pending Alembic migrations before starting the application.
 
-## API
-
-### `POST /api/v1/analyses`
-
-Example request:
-
-```json
-{
-  "dataset_name": "quarterly-sales",
-  "records": [
-    {"region": "North", "revenue": 12000, "cost": 7000},
-    {"region": "South", "revenue": 18500, "cost": 9000},
-    {"region": "West", "revenue": 9000, "cost": 6500}
-  ]
-}
-```
-
-Returns the persisted analysis, numeric metrics, and recommendations.
-
-### `GET /api/v1/analyses/{analysis_id}`
-
-Returns a previously stored analysis.
-
-### `GET /health`
-
-Returns service health status.
-
-## Tests
+Check container status:
 
 ```bash
-pytest
+docker compose ps
 ```
 
-## Configuration
+View application logs:
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `sqlite:///./business_intelligence.db` | SQLAlchemy connection URL |
-| `OPENAI_API_KEY` | unset | OpenAI API key |
-| `OPENAI_MODEL` | `gpt-4.1-mini` | Model used for optional enhancement |
-| `ENABLE_LLM` | `false` | Enable LLM enhancement |
+```bash
+docker compose logs -f api
+```
 
-## Security notes
+Stop the services:
 
-- Treat uploaded dataset content as untrusted input.
-- Keep API keys in environment variables or a secret manager.
-- The MVP intentionally has no public authentication layer; add authentication, authorization, rate limiting, upload limits, and audit logging before exposing it to untrusted networks.
-- LLM output is validated against Pydantic schemas, but recommendations should be reviewed before operational use.
-- Avoid sending personal, confidential, or regulated data to an external model without an approved data-processing basis.
+```bash
+docker compose down
+```
 
-## Roadmap
+The PostgreSQL data is stored in a named Docker volume and is preserved when the containers are stopped. Do not use `docker compose down -v` unless you intentionally want to delete that database volume.
 
-- [ ] Authentication and role-based access control
-- [ ] Alembic migrations
-- [ ] Dataset upload (CSV)
-- [ ] Background processing for large datasets
-- [ ] Observability and structured logging
-- [ ] Evaluation dataset for recommendation quality
-- [ ] Frontend dashboard
+## Database Migrations
 
-## License
+Alembic manages database schema changes.
 
-MIT
+Apply all pending migrations:
+
+```bash
+alembic upgrade head
+```
+
+Check the current migration:
+
+```bash
+alembic current
+```
+
+Generate a migration after changing SQLAlchemy models:
+
+```bash
+alembic revision --autogenerate -m "describe schema change"
+```
+
+Review the generated migration before applying it.
+
+For Docker:
+
+```bash
+docker compose exec api alembic current

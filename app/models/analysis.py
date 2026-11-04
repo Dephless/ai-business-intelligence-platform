@@ -9,7 +9,7 @@ from app.db.session import Base
 class Analysis(Base):
     __tablename__ = "analyses"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     dataset_name: Mapped[str] = mapped_column(String(120), nullable=False)
     record_count: Mapped[int] = mapped_column(Integer, nullable=False)
     result: Mapped[dict] = mapped_column(JSON, nullable=False)
