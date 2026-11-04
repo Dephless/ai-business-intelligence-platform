@@ -5,6 +5,7 @@ from openai import OpenAI
 
 from app.core.config import settings
 from app.schemas.analysis import AnalysisResult, Metric, Recommendation
+from app.services.recommendation_engine import generate_recommendations
 
 
 def _numeric_metrics(records: list[dict[str, Any]]) -> list[Metric]:
@@ -41,62 +42,6 @@ def _numeric_metrics(records: list[dict[str, Any]]) -> list[Metric]:
         )
 
     return metrics
-
-
-def _baseline_recommendations(
-    metrics: list[Metric],
-) -> list[Recommendation]:
-    recommendations: list[Recommendation] = []
-
-    for metric in metrics:
-        if metric.count >= 2 and metric.maximum > metric.average * 2 and metric.average > 0:
-            recommendations.append(
-                Recommendation(
-                    title=f"Investigate outliers in {metric.field}",
-                    description=(
-                        f"The maximum value ({metric.maximum}) is more "
-                        f"than twice the average ({metric.average})."
-                    ),
-                    priority="medium",
-                    rationale=(
-                        "A large gap between the maximum and average "
-                        "can indicate an outlier or an unusually strong result."
-                    ),
-                    confidence=0.75,
-                )
-            )
-
-        if metric.minimum < 0:
-            recommendations.append(
-                Recommendation(
-                    title=f"Review negative values in {metric.field}",
-                    description=(
-                        f"At least one negative value was found (minimum: {metric.minimum})."
-                    ),
-                    priority="high",
-                    rationale=(
-                        "Negative values may be valid, but should be checked "
-                        "against the business meaning of this field."
-                    ),
-                    confidence=0.8,
-                )
-            )
-
-    if not recommendations:
-        recommendations.append(
-            Recommendation(
-                title="Define business-specific performance thresholds",
-                description=("No obvious numeric anomaly was detected by the baseline rules."),
-                priority="low",
-                rationale=(
-                    "Domain-specific thresholds make future recommendations "
-                    "more relevant and measurable."
-                ),
-                confidence=0.65,
-            )
-        )
-
-    return recommendations
 
 
 def _llm_recommendations(
@@ -157,7 +102,7 @@ def analyze_dataset(
     records: list[dict[str, Any]],
 ) -> AnalysisResult:
     metrics = _numeric_metrics(records)
-    recommendations = _baseline_recommendations(metrics)
+    recommendations = generate_recommendations(metrics, records)
 
     summary = (
         f"Analyzed {len(records)} records in '{dataset_name}'. Found {len(metrics)} numeric fields."

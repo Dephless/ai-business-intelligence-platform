@@ -5,6 +5,7 @@ import pytest
 
 from app.schemas.analysis import Metric
 from app.services import analysis_service
+from app.services.recommendation_engine import generate_recommendations
 
 
 def test_numeric_metrics_calculates_statistics():
@@ -53,11 +54,12 @@ def test_baseline_recommendations_detects_outlier():
         minimum=100,
         maximum=500,
     )
+    records = [{"revenue": value} for value in [100, 110, 105, 115, 108, 900]]
 
-    recommendations = analysis_service._baseline_recommendations([metric])
+    recommendations = generate_recommendations([metric], records)
 
     assert len(recommendations) == 1
-    assert recommendations[0].title == "Investigate outliers in revenue"
+    assert recommendations[0].title == "Investigate statistical outliers in revenue"
     assert recommendations[0].priority == "medium"
 
 
@@ -71,7 +73,9 @@ def test_baseline_recommendations_detects_negative_values():
         maximum=30,
     )
 
-    recommendations = analysis_service._baseline_recommendations([metric])
+    records = [{"profit": value} for value in [-20, -10, 0, 10, 20, 30]]
+
+    recommendations = generate_recommendations([metric], records)
 
     assert any(
         recommendation.title == "Review negative values in profit"
@@ -89,8 +93,9 @@ def test_baseline_recommendations_uses_fallback():
         minimum=80,
         maximum=120,
     )
+    records = [{"revenue": value} for value in [80, 90, 100, 110, 120]]
 
-    recommendations = analysis_service._baseline_recommendations([metric])
+    recommendations = generate_recommendations([metric], records)
 
     assert len(recommendations) == 1
     assert recommendations[0].priority == "low"
