@@ -115,7 +115,19 @@ function convertValue(value: string): CellValue {
   return number;
 }
 
+
 async function parseCsv(file: File): Promise<RecordRow[]> {
+  const fileName = file.name.toLowerCase();
+
+  // 1. File extension check
+  if (!fileName.endsWith(".csv")) {
+    throw new Error("Only CSV files are allowed.");
+  }
+
+  // MIME type is not a reliable security check.
+  // Browsers and operating systems may report different MIME types.
+
+  // 2. File size validation
   if (file.size === 0) {
     throw new Error("The uploaded CSV file is empty.");
   }
@@ -126,60 +138,104 @@ async function parseCsv(file: File): Promise<RecordRow[]> {
 
   let text: string;
 
+  // 3. Read and decode file safely
   try {
     const buffer = await file.arrayBuffer();
-    text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+
+    text = new TextDecoder("utf-8", {
+      fatal: true
+    }).decode(buffer);
+
   } catch {
-    throw new Error("The CSV file must use UTF-8 encoding.");
+    throw new Error("The CSV file must use valid UTF-8 encoding.");
   }
 
+  // 4. Remove optional UTF-8 BOM
+  text = text.replace(/^\uFEFF/, "");
+
+  // 5. Reject binary data and unexpected control characters
+  if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(text)) {
+    throw new Error("The CSV file contains invalid control characters.");
+  }
+
+  // 6. Parse CSV
   const rows = parseCsvText(text);
 
-  if (rows.length === 0) {
+  if (!Array.isArray(rows) || rows.length === 0) {
     throw new Error("The CSV file must contain a header row.");
   }
 
+  // 7. Limit records before further processing
+  if (rows.length - 1 > MAX_RECORDS) {
+    throw new Error(`The CSV file must not exceed ${MAX_RECORDS} records.`);
+  }
+
+  // 8. Validate headers
   const headers = rows[0].map((header) => header.trim());
+
+  if (headers.length === 0 || headers.length > MAX_COLUMNS) {
+    throw new Error(`The CSV file must not exceed ${MAX_COLUMNS} columns.`);
+  }
 
   if (headers.some((header) => !header)) {
     throw new Error("CSV column names must not be empty.");
   }
 
-  const normalizedHeaders = headers.map((header) => header.toLowerCase());
+  const normalizedHeaders = headers.map((header) =>
+    header.toLowerCase()
+  );
 
   if (new Set(normalizedHeaders).size !== headers.length) {
     throw new Error("Duplicate CSV column names are not allowed.");
   }
 
-  if (headers.length > MAX_COLUMNS) {
-    throw new Error(`The CSV file must not exceed ${MAX_COLUMNS} columns.`);
+  // 9. Reject potentially dangerous object property names
+  const forbiddenHeaders = new Set([
+    "__proto__",
+    "prototype",
+    "constructor"
+  ]);
+
+  if (normalizedHeaders.some((header) => forbiddenHeaders.has(header))) {
+    throw new Error("The CSV contains a reserved column name.");
   }
 
+  // 10. Validate data rows
   const dataRows = rows.slice(1);
 
   if (dataRows.length === 0) {
     throw new Error("The CSV file must contain at least one data row.");
   }
 
-  if (dataRows.length > MAX_RECORDS) {
-    throw new Error(`The CSV file must not exceed ${MAX_RECORDS} records.`);
-  }
+  const MAX_CELL_LENGTH = 100_000;
 
   return dataRows.map((values) => {
+    if (!Array.isArray(values)) {
+      throw new Error("Invalid CSV row.");
+    }
+
     if (values.length > headers.length) {
       throw new Error("A CSV row contains more values than the header.");
     }
 
-    const record: RecordRow = {};
+    if (values.some((value) => value.length > MAX_CELL_LENGTH)) {
+      throw new Error("A CSV cell exceeds the maximum allowed length.");
+    }
+
+    // Null prototype prevents special object property behavior
+    const record = Object.create(null) as RecordRow;
 
     headers.forEach((header, index) => {
       record[header] =
-        index < values.length ? convertValue(values[index]) : null;
+        index < values.length
+          ? convertValue(values[index])
+          : null;
     });
 
     return record;
   });
 }
+
 
 function calculateMetrics(records: RecordRow[]): Metric[] {
   const fields = [
