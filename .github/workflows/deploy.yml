@@ -38,9 +38,11 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build frontend
+      - name: Build protected frontend
         working-directory: frontend
-        run: npm run build
+        run: npm run build:protected
+        env:
+          STATICRYPT_PASSWORD: ${{ secrets.STATICRYPT_PASSWORD }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
