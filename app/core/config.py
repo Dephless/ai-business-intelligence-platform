@@ -1,11 +1,14 @@
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "AI Business Intelligence Platform"
     database_url: str = "sqlite:///./business_intelligence.db"
-    openai_api_key: str | None = None
-    openai_model: str = "gpt-4.1-mini"
+
+    # Gemini configuration
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
     enable_llm: bool = False
 
     secret_key: str | None = None

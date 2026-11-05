@@ -49,10 +49,10 @@ def _llm_recommendations(
     records: list[dict[str, Any]],
     metrics: list[Metric],
 ) -> dict[str, Any] | None:
-    if not settings.enable_llm or not settings.openai_api_key:
+    if not settings.enable_llm or not settings.gemini_api_key:
         return None
 
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = OpenAI(api_key=settings.gemini_api_key)
 
     payload = {
         "dataset_name": dataset_name,

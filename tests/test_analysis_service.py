@@ -115,7 +115,7 @@ def test_llm_recommendations_returns_none_when_not_configured(
     api_key,
 ):
     monkeypatch.setattr(analysis_service.settings, "enable_llm", enable_llm)
-    monkeypatch.setattr(analysis_service.settings, "openai_api_key", api_key)
+    monkeypatch.setattr(analysis_service.settings, "gemini_api_key", api_key)
 
     result = analysis_service._llm_recommendations("sales", [], [])
 
@@ -140,7 +140,7 @@ def test_llm_recommendations_parses_response(monkeypatch):
     )
 
     monkeypatch.setattr(analysis_service.settings, "enable_llm", True)
-    monkeypatch.setattr(analysis_service.settings, "openai_api_key", "test-key")
+    monkeypatch.setattr(analysis_service.settings, "gemini_api_key", "test-key")
     monkeypatch.setattr(
         analysis_service,
         "OpenAI",
@@ -168,7 +168,7 @@ def test_llm_recommendations_rejects_empty_response(monkeypatch):
     )
 
     monkeypatch.setattr(analysis_service.settings, "enable_llm", True)
-    monkeypatch.setattr(analysis_service.settings, "openai_api_key", "test-key")
+    monkeypatch.setattr(analysis_service.settings, "gemini_api_key", "test-key")
     monkeypatch.setattr(
         analysis_service,
         "OpenAI",
@@ -193,7 +193,7 @@ def test_llm_recommendations_rejects_non_object_json(monkeypatch):
     )
 
     monkeypatch.setattr(analysis_service.settings, "enable_llm", True)
-    monkeypatch.setattr(analysis_service.settings, "openai_api_key", "test-key")
+    monkeypatch.setattr(analysis_service.settings, "gemini_api_key", "test-key")
     monkeypatch.setattr(
         analysis_service,
         "OpenAI",
