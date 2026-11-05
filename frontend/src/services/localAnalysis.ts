@@ -1,7 +1,8 @@
-﻿import type {
+import type {
   Analysis,
   Metric,
   Recommendation,
+  TimeSeriesPoint,
 } from "../types/analysis";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -294,10 +295,63 @@ function generateRecommendations(
   return recommendations;
 }
 
+
+function generateTimeSeries(
+  records: RecordRow[],
+  metrics: Metric[],
+): TimeSeriesPoint[] {
+  if (records.length === 0) {
+    return [];
+  }
+
+  const dateColumn = Object.keys(records[0]).find((column) =>
+    /^(date|datum|timestamp|time|created_at|order_date)$/i.test(column.trim()),
+  );
+
+  if (!dateColumn) {
+    return [];
+  }
+
+  return records
+    .map((row) => {
+      const rawDate = row[dateColumn];
+
+      if (typeof rawDate !== "string") {
+        return null;
+      }
+
+      const timestamp = Date.parse(rawDate);
+
+      if (!Number.isFinite(timestamp)) {
+        return null;
+      }
+
+      const point: TimeSeriesPoint = {
+        date: new Date(timestamp).toISOString(),
+      };
+
+      for (const metric of metrics) {
+        const value = row[metric.field];
+
+        if (typeof value === "number") {
+          point[metric.field] = value;
+        }
+      }
+
+      return { timestamp, point };
+    })
+    .filter(
+      (entry): entry is { timestamp: number; point: TimeSeriesPoint } =>
+        entry !== null,
+    )
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .map((entry) => entry.point);
+}
 export async function analyzeLocally(file: File): Promise<Analysis> {
   const records = await parseCsv(file);
   const metrics = calculateMetrics(records);
   const recommendations = generateRecommendations(metrics, records);
+  const timeSeries = generateTimeSeries(records, metrics);
 
   return {
     id: 0,
@@ -310,6 +364,7 @@ export async function analyzeLocally(file: File): Promise<Analysis> {
         `Found ${metrics.length} numeric fields.`,
       record_count: records.length,
       numeric_metrics: metrics,
+      time_series: timeSeries,
       recommendations,
       llm_enhanced: false,
     },

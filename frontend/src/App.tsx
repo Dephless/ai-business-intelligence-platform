@@ -53,9 +53,18 @@ function Dashboard({
   onClear,
 }: DashboardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedMetric, setSelectedMetric] = useState("revenue");
 
   const metrics = analysis?.result.numeric_metrics ?? [];
-  const recommendations = analysis?.result.recommendations ?? [];
+const timeSeries = analysis?.result.time_series ?? [];
+const recommendations = analysis?.result.recommendations ?? [];
+
+const selectedMetricField = metrics.some(
+  (metric) => metric.field === selectedMetric,
+)
+  ? selectedMetric
+  : metrics.find((metric) => metric.field.toLowerCase() === "revenue")
+      ?.field ?? metrics[0]?.field ?? "";
 
   const kpis = [
     {
@@ -231,93 +240,113 @@ function Dashboard({
         </section>
 
         <section className="content-grid">
-          <article className="panel revenue-panel">
-            <div className="panel-header">
-              <div>
-                <h3>Numeric Metrics</h3>
-                <p>Statistical totals from your CSV file</p>
-              </div>
-            </div>
+         <article className="panel revenue-panel">
+  <div className="panel-header">
+    <div>
+      <h3>Time Series Analysis</h3>
+      <p>Chronological development of your selected metric</p>
+    </div>
 
-            {metrics.length > 0 ? (
-              <>
-                <div className="chart-summary">
-                  <strong>{metrics.length}</strong>
-                  <span>numeric fields analyzed</span>
-                </div>
+    {timeSeries.length > 0 && (
+      <select
+        value={selectedMetricField}
+        onChange={(event) => setSelectedMetric(event.target.value)}
+        aria-label="Select metric"
+      >
+        {metrics.map((metric) => (
+          <option key={metric.field} value={metric.field}>
+            {metric.field}
+          </option>
+        ))}
+      </select>
+    )}
+  </div>
 
-                <div className="chart-container">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={metrics}>
-                      <defs>
-                        <linearGradient
-                          id="metricsGradient"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="#818cf8"
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="#818cf8"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
+  {timeSeries.length > 0 && selectedMetricField ? (
+    <>
+      <div className="chart-summary">
+        <strong>{timeSeries.length}</strong>
+        <span>time points analyzed</span>
+      </div>
 
-                      <CartesianGrid
-                        stroke="#273449"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
+      <div className="chart-container">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={timeSeries}>
+            <defs>
+              <linearGradient
+                id="metricsGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="0%" stopColor="#818cf8" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+              </linearGradient>
+            </defs>
 
-                      <XAxis
-                        dataKey="field"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#8995a9", fontSize: 11 }}
-                      />
+            <CartesianGrid
+              stroke="#273449"
+              strokeDasharray="3 3"
+              vertical={false}
+            />
 
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: "#8995a9", fontSize: 11 }}
-                      />
+            <XAxis
+              dataKey="date"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#8995a9", fontSize: 11 }}
+              tickFormatter={(value: string) =>
+                new Intl.DateTimeFormat("de-DE", {
+                  day: "2-digit",
+                  month: "short",
+                }).format(new Date(value))
+              }
+            />
 
-                      <Tooltip
-                        contentStyle={{
-                          background: "#172235",
-                          border: "1px solid #334155",
-                          borderRadius: "10px",
-                          color: "#fff",
-                        }}
-                      />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#8995a9", fontSize: 11 }}
+            />
 
-                      <Area
-                        type="monotone"
-                        dataKey="total"
-                        name="Total"
-                        stroke="#818cf8"
-                        strokeWidth={3}
-                        fill="url(#metricsGradient)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </>
-            ) : (
-              <div className="empty-state">
-                <Database size={30} />
-                <strong>No analysis yet</strong>
-                <p>Select a CSV file to see its numeric metrics here.</p>
-              </div>
-            )}
-          </article>
+            <Tooltip
+              labelFormatter={(value) =>
+                new Intl.DateTimeFormat("de-DE", {
+                  dateStyle: "medium",
+                }).format(new Date(String(value)))
+              }
+              contentStyle={{
+                backgroundColor: "#111827",
+                border: "1px solid #273449",
+                borderRadius: "10px",
+                color: "#fff",
+              }}
+            />
+
+            <Area
+              type="monotone"
+              dataKey={selectedMetricField}
+              name={selectedMetricField}
+              stroke="#818cf8"
+              strokeWidth={3}
+              fill="url(#metricsGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </>
+  ) : (
+    <div className="empty-state">
+      <Database size={30} />
+      <strong>No time-series data</strong>
+      <p>
+        Upload a CSV containing a date column and numeric values to display
+        the timeline.
+      </p>
+    </div>
+  )}
+</article>
 
           <article className="panel insights-panel" id="insights">
             <div className="panel-header">

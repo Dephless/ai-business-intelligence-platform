@@ -16,10 +16,16 @@ export interface Recommendation {
   confidence: number;
 }
 
+export interface TimeSeriesPoint {
+  date: string;
+  [metric: string]: string | number;
+}
+
 export interface AnalysisResult {
   summary: string;
   record_count: number;
   numeric_metrics: Metric[];
+  time_series: TimeSeriesPoint[];
   recommendations: Recommendation[];
   llm_enhanced: boolean;
 }
