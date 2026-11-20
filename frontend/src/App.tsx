@@ -457,18 +457,7 @@ const selectedMetricField = metrics.some(
           </section>
         )}
 
-         <section className="privacy-notice">
-          <ShieldCheck size={20} />
-          <div>
-            <strong>Privacy-first processing</strong>
-            <p>
-              CSV files are processed locally in your browser.
-              The application does not upload CSV contents to an
-              application server or persist analysis results.
-              Use synthetic data for this public demo.
-            </p>
-          </div>
-        </section>
+         
 
         <footer className="footer">
           <span>InsightAI · Privacy-first demo</span>

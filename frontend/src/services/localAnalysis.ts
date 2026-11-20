@@ -8,15 +8,45 @@ import type {
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_RECORDS = 5_000;
 const MAX_COLUMNS = 50;
+const MAX_CELL_LENGTH = 100_000;
 
 type CellValue = string | number | null;
 type RecordRow = Record<string, CellValue>;
+
+
 
 function parseCsvText(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
   let inQuotes = false;
+  let quoteClosed = false;
+
+  function appendToField(value: string): void {
+    if (field.length + value.length > MAX_CELL_LENGTH) {
+      throw new Error("A CSV cell exceeds the maximum allowed length.");
+    }
+    field += value;
+  }
+
+  function pushField(): void {
+    if (row.length >= MAX_COLUMNS) {
+      throw new Error(`The CSV file must not exceed ${MAX_COLUMNS} columns.`);
+    }
+
+    row.push(field);
+    field = "";
+    quoteClosed = false;
+  }
+
+  function pushRow(): void {
+    if (rows.length >= MAX_RECORDS + 1) {
+      throw new Error(`The CSV file must not exceed ${MAX_RECORDS} records.`);
+    }
+
+    rows.push(row);
+    row = [];
+  }
 
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
@@ -24,13 +54,34 @@ function parseCsvText(text: string): string[][] {
     if (inQuotes) {
       if (char === '"') {
         if (text[i + 1] === '"') {
-          field += '"';
+          appendToField('"');
           i++;
         } else {
           inQuotes = false;
+          quoteClosed = true;
         }
       } else {
-        field += char;
+        appendToField(char);
+      }
+      continue;
+    }
+
+    if (quoteClosed) {
+      if (char === ",") {
+        pushField();
+      } else if (char === "\n" || char === "\r") {
+        pushField();
+        if (!(row.length === 1 && row[0] === "")) {
+          pushRow();
+        } else {
+          row = [];
+        }
+
+        if (char === "\r" && text[i + 1] === "\n") {
+          i++;
+        }
+      } else {
+        throw new Error("The CSV file has an invalid structure.");
       }
       continue;
     }
@@ -38,17 +89,15 @@ function parseCsvText(text: string): string[][] {
     if (char === '"' && field.length === 0) {
       inQuotes = true;
     } else if (char === ",") {
-      row.push(field);
-      field = "";
+      pushField();
     } else if (char === "\n" || char === "\r") {
-      row.push(field);
+      pushField();
 
       if (!(row.length === 1 && row[0] === "")) {
-        rows.push(row);
+        pushRow();
+      } else {
+        row = [];
       }
-
-      row = [];
-      field = "";
 
       if (char === "\r" && text[i + 1] === "\n") {
         i++;
@@ -56,7 +105,7 @@ function parseCsvText(text: string): string[][] {
     } else if (char === '"') {
       throw new Error("The CSV file has an invalid structure.");
     } else {
-      field += char;
+      appendToField(char);
     }
   }
 
@@ -64,13 +113,15 @@ function parseCsvText(text: string): string[][] {
     throw new Error("The CSV file has an invalid structure.");
   }
 
-  if (field.length > 0 || row.length > 0) {
-    row.push(field);
-    rows.push(row);
+  if (field.length > 0 || row.length > 0 || quoteClosed) {
+    pushField();
+    pushRow();
   }
 
   return rows;
 }
+
+
 
 function convertValue(value: string): CellValue {
   const normalized = value.trim();
@@ -207,7 +258,7 @@ async function parseCsv(file: File): Promise<RecordRow[]> {
     throw new Error("The CSV file must contain at least one data row.");
   }
 
-  const MAX_CELL_LENGTH = 100_000;
+  
 
   return dataRows.map((values) => {
     if (!Array.isArray(values)) {
@@ -221,6 +272,10 @@ async function parseCsv(file: File): Promise<RecordRow[]> {
     if (values.some((value) => value.length > MAX_CELL_LENGTH)) {
       throw new Error("A CSV cell exceeds the maximum allowed length.");
     }
+
+    if (values.some((value) => value.length > MAX_CELL_LENGTH)) {
+  throw new Error("A CSV cell exceeds the maximum allowed length.");
+}
 
     // Null prototype prevents special object property behavior
     const record = Object.create(null) as RecordRow;
