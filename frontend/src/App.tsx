@@ -13,7 +13,7 @@ import {
   Download,
   FileUp,
   LayoutDashboard,
-  ShieldCheck,
+  
   Sparkles,
   TrendingUp,
 } from "lucide-react";
