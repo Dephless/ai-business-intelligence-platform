@@ -18,36 +18,6 @@ The platform combines deterministic analysis with optional OpenAI-powered interp
 - **Code quality:** Ruff linting and formatting, MyPy static type checking.
 - **Continuous integration:** GitHub Actions workflow.
 
-## Architecture
-
-The application follows a modular service-oriented structure:
-
-```text
-Client
-  |
-  v
-FastAPI REST API
-  |
-  v
-Pydantic Validation
-  |
-  v
-Analysis Service
-  |
-  +----> Statistical Analysis
-  |
-  +----> Baseline Recommendations
-  |
-  +----> Optional OpenAI Enhancement
-  |
-  v
-SQLAlchemy ORM
-  |
-  v
-PostgreSQL / SQLite
-```
-
-Database schema changes are managed through Alembic migrations rather than application startup table creation.
 
 ## Tech Stack
 
