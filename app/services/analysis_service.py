@@ -52,7 +52,10 @@ def _llm_recommendations(
     if not settings.enable_llm or not settings.gemini_api_key:
         return None
 
-    client = OpenAI(api_key=settings.gemini_api_key)
+    client = OpenAI(
+        api_key=settings.gemini_api_key,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
 
     payload = {
         "dataset_name": dataset_name,
@@ -62,7 +65,7 @@ def _llm_recommendations(
     }
 
     response = client.chat.completions.create(
-        model=settings.openai_model,
+        model=settings.gemini_model,
         response_format={"type": "json_object"},
         messages=[
             {

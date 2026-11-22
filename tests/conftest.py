@@ -51,3 +51,4 @@ def test_secret_key(monkeypatch):
         "secret_key",
         "test-secret-key-for-unit-tests-32-bytes",
     )
+    monkeypatch.setattr(settings, "enable_llm", False)

@@ -129,7 +129,7 @@ def test_llm_recommendations_parses_response(monkeypatch):
     }
 
     def fake_create(**kwargs):
-        assert kwargs["model"] == analysis_service.settings.openai_model
+        assert kwargs["model"] == analysis_service.settings.gemini_model
         assert kwargs["response_format"] == {"type": "json_object"}
         return SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(expected)))]
